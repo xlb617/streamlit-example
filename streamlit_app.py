@@ -4,35 +4,21 @@ import math
 import pandas as pd
 import streamlit as st
 
-"""
-# Welcome to Streamlit!
+st.set_page_config(page_title='Streamlit App应用程序',layout = 'wide')
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+def get_data_from_excel(excel_file):
+    return(pd.read_excel(excel_file))
 
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+st.title("标题：欢迎加入Streamlit")
+# st.write('Hello World!')
+# st.text('st.text输出内容！')
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+uploaded_file = st.file_uploader("选择文件")
+if uploaded_file is not None:
+    st.write(f'上传文件为：{uploaded_file.name}')
+    st.write(get_data_from_excel(uploaded_file))
 
-
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
-
-    Point = namedtuple('Point', 'x y')
-    data = []
-
-    points_per_turn = total_points / num_turns
-
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
-
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+st.sidebar.title('页面导航： ')
+menu = ['菜单1','菜单2','菜单3','菜单4','菜单5','菜单6','菜单7']
+choice = st.sidebar.selectbox('菜单选项',menu)
+st.sidebar.text(f'你选择了【{choice}】选项')
