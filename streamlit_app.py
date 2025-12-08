@@ -190,7 +190,13 @@ if uploaded_file is not None:
             if Statistical_object in TongJi_Item:
                 continue
             if st.checkbox(Statistical_object, key =f'c2{Statistical_object}+{Statistical_object}'):
-                if Statistical_object == '部门':
+                if Statistical_object == '所属公司':
+                    companys =data['所属公司'].value_counts().keys()
+                    company = st.radio('请选择公司', companys)
+                    # st.write(department)
+                    company_name = f'"{company}"'
+                    data = hmc.query(f'所属公司 == {company_name}')
+				if Statistical_object == '部门':
                     departments =data['部门'].value_counts().keys()
                     department = st.radio('请选择部门', departments)
                     # st.write(department)
