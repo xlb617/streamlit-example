@@ -177,7 +177,7 @@ if uploaded_file is not None:
     st.markdown('#### 请选择显示项(数据来源：以集团eHR人事系统的导出excel为准) ')
 
     # 统计对象
-    Statistical_objects = ['公司', '部门', '比照管理']
+    Statistical_objects = ['公司', '部门']
     c1, c2, c3 = st.columns(3)
     with c1:
         radio_list = hmc['人员类别'].value_counts().keys().tolist()
@@ -185,23 +185,75 @@ if uploaded_file is not None:
         if my_radio:
             data = data[data.人员类别 == my_radio]
     with c2:
-        # pass
-        for Statistical_object in Statistical_objects:
-            if Statistical_object in TongJi_Item:
-                continue
-            if st.checkbox(Statistical_object, key =f'c2{Statistical_object}+{Statistical_object}'):
-                if Statistical_object == '所属公司':
-                    companys =data['所属公司'].value_counts().keys()
-                    company = st.radio('请选择公司', companys)
-                    # st.write(department)
-                    company_name = f'"{company}"'
-                    data = hmc.query(f'所属公司 == {company_name}')
-				if Statistical_object == '部门':
-                    departments =data['部门'].value_counts().keys()
-                    department = st.radio('请选择部门', departments)
-                    # st.write(department)
-                    department_name = f'"{department}"'
-                    data = hmc.query(f'部门 == {department_name}')
+        # 先显示公司勾选框
+        company_checked = st.checkbox('公司', key='select_company')
+
+        # 如果勾选了公司
+        if company_checked:
+            # 显示公司选择
+            companys = data['所属公司'].value_counts().keys()
+            selected_company = st.radio('请选择公司', companys, key='company_choice')
+
+            if selected_company:
+                # 应用公司筛选
+                company_name = f'"{selected_company}"'
+                data = hmc.query(f'所属公司 == {company_name}')
+
+                # 只有选择了公司后，才显示部门勾选框
+                department_checked = st.checkbox('部门', key='select_department')
+
+                # 如果勾选了部门
+                if department_checked:
+                    # 显示部门选择
+                    departments = data['部门'].value_counts().keys()
+                    selected_department = st.radio('请选择部门', departments, key='department_choice')
+
+                    if selected_department:
+                        # 应用部门筛选
+                        department_name = f'"{selected_department}"'
+                        data = hmc.query(f'部门 == {department_name}'+'&' + f'所属公司 == {company_name}')
+        # # 先显示所有统计对象的勾选框
+        # selected_objects = []
+        # for obj in Statistical_objects:
+        #     if obj in TongJi_Item:
+        #         continue
+        #     if st.checkbox(obj, key=f'select_{obj}'):
+        #         selected_objects.append(obj)
+        #
+        # # 根据选择的统计对象显示具体选项
+        # for obj in selected_objects:
+        #     st.markdown(f"**{obj}选择**")
+        #     if obj == '公司':
+        #         companys = data['所属公司'].value_counts().keys()
+        #         company = st.radio('请选择公司', companys, key='company_choice')
+        #         if company:
+        #             company_name = f'"{company}"'
+        #             data = hmc.query(f'所属公司 == {company_name}')
+        #
+        #     elif obj == '部门':
+        #         departments = data['部门'].value_counts().keys()
+        #         department = st.radio('请选择部门', departments, key='department_choice')
+        #         if department:
+        #             department_name = f'"{department}"'
+        #             data = hmc.query(f'部门 == {department_name}')
+        # # pass
+        # for Statistical_object in Statistical_objects:
+        #     if Statistical_object in TongJi_Item:
+        #         continue
+        #     if st.checkbox(Statistical_object, key =f'c2{Statistical_object}+{Statistical_object}'):
+        #         if Statistical_object == '公司':
+        #             companys =data['所属公司'].value_counts().keys()
+        #             company = st.radio('请选择公司', companys)
+        #             # st.write(Statistical_object)
+        #             company_name = f'"{company}"'
+        #             data = hmc.query(f'所属公司 == {company_name}')
+        #         if Statistical_object == '部门':
+        #             departments =data['部门'].value_counts().keys()
+        #             department = st.radio('请选择部门', departments)
+        #             # st.write(department)
+        #             department_name = f'"{department}"'
+        #             data = hmc.query(f'部门 == {department_name}')
+
                 # if Statistical_object == '比照管理':
                 #     departments = data['职务级别'].value_counts().keys()
                 #     department = st.radio('请选择职务级别', departments)
