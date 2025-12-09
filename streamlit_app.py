@@ -84,7 +84,7 @@ if uploaded_file is not None:
     # 性别列表
     genders = {'男': '性别 == "男"', '女': '性别 == "女"'}
     #年龄范围
-    age_ranges = ['30岁以下', '31~35岁', '36~40岁', '41~45岁', '46~50岁', '51~55岁', '56~60岁', '0~60岁', '0~100岁']
+    age_ranges = [ '0~100岁', '0~60岁', '56~60岁', '51~55岁', '46~50岁', '41~45岁', '36~40岁', '31~35岁', '30岁以下']
     # 年龄段
     age_groups = {}
     for age_range in age_ranges:
@@ -178,7 +178,7 @@ if uploaded_file is not None:
 
     # 统计对象
     Statistical_objects = ['公司', '部门']
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
         radio_list = hmc['人员类别'].value_counts().keys().tolist()
         my_radio = st.radio("①人员类别", radio_list, help="请注意在职需要再统计异地交流干部和精诚、异地任职在龙岩退休等情况", )
@@ -271,9 +271,15 @@ if uploaded_file is not None:
 
     with c3:
         age_range =st.radio('按各年龄段统计指标', age_ranges)
-        st.write(age_range)
-        st.write(age_groups[age_range])
+        # st.write(age_range)
+        # st.write(age_groups[age_range])
         data = data.query(age_groups[age_range])
+        # with st.expander("显示内容选择"):
+        #     update_show_items(hmc.columns)
+        # show_items = st.session_state.show_items
+        # data[show_items]
+
+    with c4:
         with st.expander("显示内容选择"):
             update_show_items(hmc.columns)
         show_items = st.session_state.show_items
