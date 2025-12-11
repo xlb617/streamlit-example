@@ -2,27 +2,87 @@ import streamlit as st
 import pandas as pd
 import re
 from datetime import date
-# form openpyxl import load_workbook
 
-st.set_page_config(page_title='人力资源调查统计', layout='wide')
-hide_streamlit_style = '''
-    <style>
-        #MainMenu  {visibility: hidden;}
-        footer {visibility: hidden;}
-        [data-testid ="stAppViewContaine"']{
+
+def generate_css(language):
+    if language == 'en':
+
+        before_content = "Drag files here"
+
+        after_content = "The maximum limit for each file is 200MB."
+
+        button_content = "Browse file"
+
+    else:
+
+        before_content = "将文件拖放到此处"
+
+        after_content = "每个文件最大限制200MB"
+
+        button_content = "浏览文件"
+
+    css = f'''
+<style>
+    [data-testid="stFileUploaderDropzone"] div div::before {{
+        content: "{before_content}";
+    }}
+    [data-testid="stFileUploaderDropzone"] div div span {{
+        display: none;
+    }}
+    [data-testid="stFileUploaderDropzone"] div div::after {{
+        color: rgba(49, 51, 63, 0.6);
+        font-size: .8em;
+        content: "{after_content}";
+    }}
+    [data-testid="stFileUploaderDropzone"] div div small {{
+        display: none;
+    }}
+    [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"] {{
+        font-size: 0px;
+    }}
+    [data-testid="stFileUploaderDropzone"] [data-testid="stBaseButton-secondary"]::after {{
+        content: "{button_content}";
+        font-size: 17px !important;
+    }}
+    #MainMenu  {{visibility: hidden;}}
+        footer {{visibility: hidden;}}
+        [data-testid ="stAppViewContaine"']{{
             width:100%;
             height:100%;
             background-size:cover;
             backgroud-position:center center;
             backgroud-repeat:repeat;
             backgroud-image:url(""
-            }
-        [data-testid = "stHeader"]{
+            }}
+        [data-testid = "stHeader"]{{
             background-color:rgba(0,0,0,0)
-        }
-	</style>
+        }}
+
+</style>
 '''
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
+    return css
+
+st.set_page_config(page_title='HR数据统计系统', page_icon="📊", layout='wide')
+st.title("📊 人力资源数据统计 - 文件上传")
+# hide_streamlit_style = '''
+#     <style>
+#         #MainMenu  {visibility: hidden;}
+#         footer {visibility: hidden;}
+#         [data-testid ="stAppViewContaine"']{
+#             width:100%;
+#             height:100%;
+#             background-size:cover;
+#             backgroud-position:center center;
+#             backgroud-repeat:repeat;
+#             backgroud-image:url(""
+#             }
+#         [data-testid = "stHeader"]{
+#             background-color:rgba(0,0,0,0)
+#         }
+# 	</style>
+# '''
+st.markdown(generate_css('cn'), unsafe_allow_html=True)
 
 if 'show_items' not in st.session_state:
     st.session_state.show_items = []
@@ -58,9 +118,21 @@ def extract_numbers(text):
         numbers.append(int(current_number))
     return numbers
 
+# 用折叠面板优化界面，添加详细中文指引
+with st.expander("📁 点击上传数据文件", expanded=True):
+    st.markdown("""
+    **支持格式**：Excel(.xlsx)、CSV(.csv)  
+    **数据要求**：需包含所属公司、部门、科室名称、岗位、姓名、性别、民族、在职人员明细、籍贯、身份证出生年月等字段  
+    **上传说明**：单次仅支持一个文件，文件大小不超过200MB
+    """)
+    uploaded_file = st.file_uploader(
+        label="选择文件",  # 简化提示文本
+        type=["xlsx", "csv", "xls"],
+        label_visibility="collapsed"  # 隐藏默认标签，避免重复
+    )
 
 
-uploaded_file = st.file_uploader("请选择花名册", type=['xls', 'xlsx'])
+# uploaded_file = st.file_uploader("请选择花名册", type=['xls', 'xlsx'])
 if uploaded_file is not None:
     hmc = get_data_from_excel(uploaded_file)
     # 清洗excel表头里不规范的非汉字字符
@@ -73,7 +145,7 @@ if uploaded_file is not None:
 
     data = hmc
     show_items = []
-    TongJi_Item = ['性别', '年龄', '学历类型', '学习形式', '政治面貌', '民族', '取得专业技术职务等级', '取得工人技术职务等级', '职业资格', '职务级别', '合同类型', '身份', '合同类别']
+    TongJi_Item = ['性别', '年龄', '学历类型', '学习形式', '政治面貌', '民族', '取得专业技术职务等级', '取得工人技术职务等级', '职业资格', '职务级别', '合同类型', '身份', '合同类别', '用工形式']
     # 大专以下列表
     under_degree = ['大专', '中专', '中技', '高中', '初中', '职高', '专科']
     #大专列表
@@ -84,7 +156,7 @@ if uploaded_file is not None:
     # 性别列表
     genders = {'男': '性别 == "男"', '女': '性别 == "女"'}
     #年龄范围
-    age_ranges = [ '0~100岁', '0~60岁', '56~60岁', '51~55岁', '46~50岁', '41~45岁', '36~40岁', '31~35岁', '30岁以下']
+    age_ranges = ['100~200岁', '90~100岁', '80~90岁',  '70~80岁', '60~70岁', '60~200岁',  '0~60岁', '56~60岁', '51~55岁', '46~50岁', '41~45岁', '36~40岁', '31~35岁', '30岁以下']
     # 年龄段
     age_groups = {}
     for age_range in age_ranges:
@@ -171,6 +243,9 @@ if uploaded_file is not None:
 
     # 身份
     identitys = {'新人': '身份 =="“新人”"', '老人': '身份 =="“老人”"', '其他':'身份 =="其他"'}
+
+    #用工形式
+    Employment_forms ={'劳动合同':'用工形式 == "劳动合同"', '劳务派遣':'用工形式 == "劳务派遣"', '劳务合同':'用工形式 == "劳务合同"', '非全日制':'用工形式 == "非全日制"','季节工':'用工形式 == "季节工"'}
 
 
     st.markdown('# 全体人员统计表')
@@ -283,7 +358,8 @@ if uploaded_file is not None:
         with st.expander("显示内容选择"):
             update_show_items(hmc.columns)
         show_items = st.session_state.show_items
-        data[show_items]
+        if len(show_items) > 0:
+            data[show_items]
 
 
 
@@ -348,6 +424,11 @@ if uploaded_file is not None:
                 if checkbox_item == '身份':
                     for identity in identitys.keys():
                         df[identity] = data.query(identitys[identity])[
+                            checkbox_item].count()
+
+                if checkbox_item == '用工形式':
+                    for Employment_form in Employment_forms.keys():
+                        df[Employment_form] = data.query(Employment_forms[Employment_form])[
                             checkbox_item].count()
     df
 
