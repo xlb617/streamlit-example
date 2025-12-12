@@ -118,6 +118,23 @@ def extract_numbers(text):
         numbers.append(int(current_number))
     return numbers
 
+    # 年龄段
+def get_age_groups(age_ranges):
+    age_groups = {}
+    for age_range in age_ranges:
+        if '~' in age_range:
+            start, end = age_range.split('~')
+            start = int(start.replace('岁', ''))
+            end = int(end.replace('岁', ''))
+            age_groups[age_range] = f"(年龄 >= {start}) & (年龄 <= {end})"
+        else:
+            # 处理没有 '~' 的情况，例如返回错误或使用默认值
+            if '以下' in age_range:
+                age_groups[age_range] = f"年龄 <= {extract_numbers(age_range)[0]}"
+            if '以上' in age_range:
+                age_groups[age_range] = f"年龄 >= {extract_numbers(age_range)[0]}"
+    return  age_groups
+
 # 用折叠面板优化界面，添加详细中文指引
 with st.expander("📁 点击上传数据文件", expanded=True):
     st.markdown("""
@@ -143,6 +160,7 @@ if uploaded_file is not None:
             rename_dict = {column: new_column}
             hmc = hmc.rename(columns=rename_dict)
 
+    hmc = hmc[(hmc['年龄'] >0)]
     data = hmc
     show_items = []
     TongJi_Item = ['性别', '年龄', '学历类型', '学习形式', '政治面貌', '民族', '取得专业技术职务等级', '取得工人技术职务等级', '职业资格', '职务级别', '合同类型', '身份', '合同类别', '用工形式']
@@ -156,18 +174,25 @@ if uploaded_file is not None:
     # 性别列表
     genders = {'男': '性别 == "男"', '女': '性别 == "女"'}
     #年龄范围
-    age_ranges = ['100~200岁', '90~100岁', '80~90岁',  '70~80岁', '60~70岁', '60~200岁',  '0~60岁', '56~60岁', '51~55岁', '46~50岁', '41~45岁', '36~40岁', '31~35岁', '30岁以下']
-    # 年龄段
-    age_groups = {}
-    for age_range in age_ranges:
-        if '~' in age_range:
-            start, end = age_range.split('~')
-            start = int(start.replace('岁', ''))
-            end = int(end.replace('岁', ''))
-            age_groups[age_range] = f"(年龄 >= {start}) & (年龄 <= {end})"
-        else:
-            # 处理没有 '~' 的情况，例如返回错误或使用默认值
-            age_groups[age_range] = f"年龄 <= {extract_numbers(age_range)[0]}"
+    # age_ranges = ['100~200岁', '90~100岁', '80~90岁',  '70~80岁', '60~70岁', '60~200岁',  '0~60岁', '56~60岁', '51~55岁', '46~50岁', '41~45岁', '36~40岁', '31~35岁', '30岁以下']
+    age_ranges_by_category = {
+        '在职人员': ['66岁以下', '56~65岁', '51~55岁', '46~50岁', '41~45岁', '36~40岁', '31~35岁', '30岁以下'],
+        '离退休': ['45岁以下', '45岁以上', '45~60岁', '60~70岁', '70~80岁', '80~90岁', '90~100岁', '100岁以上']
+    }
+    # # 年龄段
+    # age_groups = {}
+    # for age_range in age_ranges:
+    #     if '~' in age_range:
+    #         start, end = age_range.split('~')
+    #         start = int(start.replace('岁', ''))
+    #         end = int(end.replace('岁', ''))
+    #         age_groups[age_range] = f"(年龄 >= {start}) & (年龄 <= {end})"
+    #     else:
+    #         # 处理没有 '~' 的情况，例如返回错误或使用默认值
+    #         if '以下' in age_range:
+    #             age_groups[age_range] = f"年龄 <= {extract_numbers(age_range)[0]}"
+    #         if '以上' in age_range:
+    #             age_groups[age_range] = f"年龄 >= {extract_numbers(age_range)[0]}"
     # 政治面貌
     Political_Status = {'中共党员': '政治面貌 == "中共党员"', '共青团员': '政治面貌 == "共青团员"', '中共预备党员': '政治面貌 == "中共预备党员"', '群众': '政治面貌 == "群众"',
                         '其他党派': '(政治面貌 == "民革会员") & (政治面貌 == "民盟盟员") & (政治面貌 == "民建会员") & (政治面貌 == "民建会员") & (政治面貌 == "民进会员") & (政治面貌 == "农工党党员") & (政治面貌 == "致公党党员") & (政治面貌 == "九三学社社员") & (政治面貌 == "台盟盟员") & (政治面貌 == "无党派民主人士")'}
@@ -255,8 +280,11 @@ if uploaded_file is not None:
     Statistical_objects = ['公司', '部门']
     c1, c2, c3, c4 = st.columns(4)
     with c1:
+        default_index = 0
         radio_list = hmc['人员类别'].value_counts().keys().tolist()
-        my_radio = st.radio("①人员类别", radio_list, help="请注意在职需要再统计异地交流干部和精诚、异地任职在龙岩退休等情况", )
+        if "在职人员" in radio_list:
+            default_index = radio_list.index("在职人员")
+        my_radio = st.radio("①人员类别", radio_list, help="请注意在职需要再统计异地交流干部和精诚、异地任职在龙岩退休等情况", index=default_index, )
         if my_radio:
             data = data[data.人员类别 == my_radio]
     with c2:
@@ -345,9 +373,15 @@ if uploaded_file is not None:
                     #         # data
 
     with c3:
-        age_range =st.radio('按各年龄段统计指标', age_ranges)
+        if my_radio in age_ranges_by_category:
+            current_age_ranges = age_ranges_by_category[my_radio]
+        # else:
+        #     current_age_ranges = age_ranges
+
+        age_range =st.radio('按各年龄段统计指标', current_age_ranges)
         # st.write(age_range)
         # st.write(age_groups[age_range])
+        age_groups =get_age_groups(current_age_ranges)
         data = data.query(age_groups[age_range])
         # with st.expander("显示内容选择"):
         #     update_show_items(hmc.columns)
