@@ -464,13 +464,59 @@ if uploaded_file is not None:
                     for Employment_form in Employment_forms.keys():
                         df[Employment_form] = data.query(Employment_forms[Employment_form])[
                             checkbox_item].count()
-    df
 
-    df.to_excel('output.xlsx', index=False)
+    # 美化数据框显示
+    st.markdown("### 📋 统计结果汇总")
 
-    st.download_button(
-        label='导出excel',
-        data=open('output.xlsx', 'rb'),
-        file_name=f'人员统计汇总表（{date.today()}）_导出{uploaded_file.name}',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+    # 设置表格样式
+    def highlight_max(s):
+        """高亮    高亮显示每列最大值
+        """
+        is_max = s == s.max()
+        return ['background-color: #ffffb3' if v else '' for v in is_max]
+
+
+    # 应用样式并显示数据框
+    styled_df = df.style.apply(highlight_max, axis=0)
+    st.dataframe(
+        styled_df,
+        use_container_width=True,
+        hide_index=False,
+        column_config={
+            "人数": st.column_config.NumberColumn(
+                "总人数",
+                format="%d人",
+            ),
+        }
     )
+
+    # # 提供精简视图选项
+    # with st.expander("查看精简统计结果"):
+    #     st.table(df)
+
+    # 导出Excel功能
+    try:
+        # 使用BytesIO避免写入本地文件
+        from io import BytesIO
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=True, sheet_name='统计结果')
+            # 添加统计说明
+            worksheet = writer.sheets['统计结果']
+            worksheet['A' + str(len(df) + 3)] = '统计日期:'
+            worksheet['B' + str(len(df) + 3)] = str(date.today())
+            worksheet['A' + str(len(df) + 4)] = '统计范围:'
+            worksheet['B' + str(len(df) + 4)] = f'{my_radio} - {age_range}'
+
+        output.seek(0)  # 回到文件开头
+        st.download_button(
+            label='📥 导出Excel表格',
+            data=output,
+            file_name=f'人员统计汇总表（{date.today()}）_{uploaded_file.name}',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            help='点击下载统计结果Excel文件'
+        )
+    except Exception as e:
+        st.error(f"导出失败: {str(e)}")
